@@ -34,7 +34,7 @@ namespace WpfApp1
             }
             Node node = new Node {
                 Level = level, Name = o.Name, GlobalId = o.GlobalId,
-                TypeName = o.GetType().Name, Volume=volume 
+                TypeName = o.GetType().Name, Volume=volume, IsChecked=true
             };
             nodes.Add(node);
             ObservableCollection<Node> subnodes = new ObservableCollection<Node>();
@@ -50,7 +50,9 @@ namespace WpfApp1
                 {
                     readProp(element, out volume);
                     subnodes.Add( new Node { Level=level+1, GlobalId=element.GlobalId, Name=element.Name,
-                        TypeName=element.GetType().Name, Volume=volume } );
+                        TypeName=element.GetType().Name, Volume=volume , IsChecked=true} );
+                    if (level >= maxLevel)
+                        maxLevel = level+1;
                 }
             }
 

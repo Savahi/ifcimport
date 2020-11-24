@@ -20,42 +20,51 @@
             </TextBlock>
             <TreeView Name="tvIFC" Padding="4" Margin="8,4,4,4" Height="400" 
                       ScrollViewer.CanContentScroll="True" 
-                      TreeViewItem.Expanded="tvIFC_Expanded" BorderThickness="0" BorderBrush="#afafaf">
+                      TreeViewItem.Expanded="tvIFC_Expanded"
+                      BorderThickness="0" BorderBrush="#afafaf">
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate ItemsSource="{Binding Path=Nodes}">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock 
+                            <TextBlock
                                 Text="{Binding Level}" Foreground="#227722" Background="#f7f7f7"
                                 FontWeight="bold" Padding="4,4,4,4" Margin="0,0,8,0"
                             />
-                            <TextBlock Text="{Binding Name}" Margin="0,4,8,4"/>
+                            <CheckBox IsChecked="{Binding IsChecked}" Margin="0,4,8,4" />
+                            <TextBlock Text="{Binding Name}" Margin="0,4,8,4" />
                         </StackPanel>                            
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem">
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-                        <!--<Setter Property="Focusable" Value="false" />-->
+                        <Setter Property="Focusable" Value="false" />
                     </Style>
                 </TreeView.ItemContainerStyle>
             </TreeView>
         </StackPanel>
         <StackPanel Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="left" Margin="20, 20, 10, 20">
+            <Button Name="btnOpenFile" Padding="8" BorderThickness="0" Margin="4,20,4,20" Click="btnOpenFile_Click">
+                Choose an IFC File
+            </Button>
             <Border BorderThickness="1" BorderBrush="#afafaf" CornerRadius="4" Padding="8">
                 <StackPanel>
                     <TextBlock FontSize="14" TextWrapping="Wrap">Expand all levels less or equal to:</TextBlock>
-                    <ComboBox Name="cmbLevels" 
+                    <ComboBox IsEnabled="False" Name="cmbLevels" 
                               SelectionChanged="cmbLevels_SelectionChanged" 
                               BorderThickness="0" Width="100" Margin="0,8,0,0"
                     />
                 </StackPanel>
             </Border>
-            <Button Name="btnOpenFile" Padding="8" BorderThickness="0" Margin="4,40,4,4" Click="btnOpenFile_Click">
-                Choose an IFC File
+            <Button Name="btnWexbimPath" IsEnabled="False" Padding="8" BorderThickness="0" Margin="4,40,4,4" Click="btnWexbimPath_Click">
+                Choose a WexBIM File
             </Button>
-            <Button Name="btnExport" Padding="8" BorderThickness="0" Margin="4,20,4,4" Click="btnExport_Click">
+            <TextBlock Name="tbWexbimPath" TextWrapping="Wrap" />
+            <Button Name="btnExport" IsEnabled="False" Padding="8" BorderThickness="0" Margin="4,20,4,4" Click="btnExport_Click">
                 Export into Spider Project
             </Button>
+            <TextBlock TextWrapping="Wrap" Foreground="#aa4444" FontSize="14" FontStyle="italic">
+                Only checked and expanded items are exported!
+            </TextBlock>
         </StackPanel>
     </Grid>
 </Window>
