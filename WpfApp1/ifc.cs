@@ -1,40 +1,53 @@
 ﻿using System.Linq;
 using Xbim.Ifc;
 using Xbim.Ifc4.Interfaces;
+using Xbim.Ifc4.QuantityResource;
 using System.Collections.ObjectModel;
 
 namespace WpfApp1
 {
     class Ifc
     {
-        public static int parseFile(string fileName, ref ObservableCollection<Node> nodes, ref int maxLevel)
+        int _parsed = 0;
+
+        public bool isParsedOk() { return (_parsed == 1); }
+
+        string _volumePropertyName;
+        string _costPropertyName;
+
+           
+        public Ifc(string fileName, ref ObservableCollection<Node> nodes, ref int maxLevel,
+            string volumePropertyName=null, string costPropertyName=null )
         {
-            int r = -1;
+            _volumePropertyName = volumePropertyName;
+            _costPropertyName = costPropertyName;
+
+            _parsed = -1;
             using (IfcStore model = IfcStore.Open(fileName))
             {
                 var project = model.Instances.FirstOrDefault<IIfcProject>();
-                readHierarchy(ref nodes, project, 1, ref maxLevel);
-                r = 0;
+                ReadHierarchy(ref nodes, project, 1, ref maxLevel);
+                _parsed = 1;
             }
-            return r;
         }
 
-
-        private static void readHierarchy(ref ObservableCollection<Node> nodes, IIfcObjectDefinition o, 
+        private void ReadHierarchy(ref ObservableCollection<Node> nodes, IIfcObjectDefinition o, 
             int level, ref int maxLevel)
         {
             if (level > maxLevel)
                 maxLevel = level;
 
+            string calculatedVolume = "";
             string volume = "";
+            string cost = "";
             var oProduct = o as IIfcProduct;
             if (oProduct != null)
             {
-                readProp(oProduct, out volume);
+                ReadProps(oProduct, out calculatedVolume, out volume, out cost);
             }
             Node node = new Node {
-                Level = level, Name = o.Name, GlobalId = o.GlobalId,
-                TypeName = o.GetType().Name, Volume=volume, IsChecked=true
+                Level = level, Name = o.Name, GlobalId = o.GlobalId, TypeName = o.GetType().Name,
+                CalculatedVolume = calculatedVolume, Cost = cost, Volume = volume, IsChecked=true
             };
             nodes.Add(node);
             ObservableCollection<Node> subnodes = new ObservableCollection<Node>();
@@ -48,9 +61,10 @@ namespace WpfApp1
                 var containedElements = oSpatialElement.ContainsElements.SelectMany(rel => rel.RelatedElements);
                 foreach (var element in containedElements)
                 {
-                    readProp(element, out volume);
+                    ReadProps(element, out calculatedVolume, out volume, out cost);
                     subnodes.Add( new Node { Level=level+1, GlobalId=element.GlobalId, Name=element.Name,
-                        TypeName=element.GetType().Name, Volume=volume , IsChecked=true} );
+                        TypeName=element.GetType().Name, CalculatedVolume = calculatedVolume, 
+                        Volume = volume, Cost = cost, IsChecked=true} );
                     if (level >= maxLevel)
                         maxLevel = level+1;
                 }
@@ -59,42 +73,68 @@ namespace WpfApp1
             //using IfcRelAggregates to get spatial decomposition of spatial structure elements 
             foreach (var item in o.IsDecomposedBy.SelectMany(r => r.RelatedObjects))
             {
-                readHierarchy(ref subnodes, item, level + 1, ref maxLevel);
+                ReadHierarchy(ref subnodes, item, level + 1, ref maxLevel);
             }
-        } // End of readHierarchy
+        } // End of ReadHierarchy
 
 
-        private static void readProp(IIfcProduct element, out string volume)
+        private void ReadProps(IIfcProduct element, out string cVolume, out string volume, out string cost)
         {
-            var properties = element.IsDefinedBy.
-                Where(r => r.RelatingPropertyDefinition is IIfcPropertySet).
-                SelectMany(r => ((IIfcPropertySet)r.RelatingPropertyDefinition).HasProperties).
-                OfType<IIfcPropertySingleValue>();
+            cVolume = "";
             volume = "";
-            foreach (var property in properties)
+            cost = "";
+
+            // Reading custom "volume" and "cost" properties
+            if (_volumePropertyName != null || _costPropertyName != null)
             {
-                //Console.WriteLine("Name=" + property.Name + ", value=" + property.NominalValue.ToString());
-                if ((property.Name).ToString().ToLower() == "volume")
+                var properties = element.IsDefinedBy.
+                    Where(r => r.RelatingPropertyDefinition is IIfcPropertySet).
+                    SelectMany(r => ((IIfcPropertySet)r.RelatingPropertyDefinition).HasProperties).
+                    OfType<IIfcPropertySingleValue>();
+                foreach (var property in properties)
                 {
-                    volume = property.NominalValue.ToString();
-                    return;
+                    if (property.Name.ToString().ToLower() == _volumePropertyName)
+                    {
+                        volume = property.NominalValue.ToString();
+                    }
+                    if (property.Name.ToString().ToLower() == _costPropertyName)
+                    {
+                        cost = property.NominalValue.ToString();
+                    }
                 }
             }
-            var properties2 = element.IsDefinedBy.
-                Where(r => r.RelatingPropertyDefinition is IIfcPropertySet).
-                SelectMany(r => ((IIfcPropertySet)r.RelatingPropertyDefinition).HasProperties).
-                OfType<IIfcPropertySingleValue>();
-            volume = "";
-            foreach (var property in properties2)
+
+            // Reading "calculated volume" property
+            // ResultsView: 2 => RelatingPropertyDefinition: Quantities
+            try
             {
-                //Console.WriteLine("Name=" + property.Name + ", value=" + property.ToString());
-                if ((property.Name).ToString().ToLower() == "volume")
+                var properties = element.IsDefinedBy.
+                    Where(r => r.RelatingPropertyDefinition is IIfcElementQuantity).
+                    SelectMany(r => ((IIfcElementQuantity)r.RelatingPropertyDefinition).PropertySetDefinitions).
+                    OfType<IIfcElementQuantity>();
+                foreach (var property in properties)
                 {
-                    volume = property.NominalValue.ToString();
-                    return;
+                    bool found = false;
+                    foreach (var qp in property.Quantities)
+                    {
+                        if( qp.GetType().Name == "IfcQuantityVolume") {
+                            var p = qp as IIfcQuantityVolume;
+                            if (p.Name.ToString().ToLower() == "grossvolume")
+                            {
+                                cVolume = p.VolumeValue.ToString();
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (found)
+                            break;
+                    }
+                    
                 }
+            } catch {
+                ;
             }
-        } // End of readProp
+        } // End of readProps
     }
 }
 
