@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Xbim.IO.CobieExpress</name>
+    </assembly>
+    <members>
+        <member name="P:Xbim.IO.CobieExpress.CobieModel.ModelProvider">
+            <summary>
+            Provides access to model persistance capabilities
+            </summary>
+        </member>
+        <member name="P:Xbim.IO.CobieExpress.CobieModel.ModelProviderFactory">
+            <summary>
+            Factory to create ModelProvider instances. 
+            </summary>
+            <remarks>Consumers can use this instance of <see cref="T:Xbim.IO.IModelProviderFactory"/> to control the 
+            implementations of IModel it uses.
+            In particular you can tell the factory to always use MemoryModel, or Esent model, or a blend (Heuristic)
+            </remarks>
+        </member>
+        <member name="M:Xbim.IO.CobieExpress.CobieModel.#ctor">
+            <summary>
+            Creates memory model inside
+            </summary>
+        </member>
+        <member name="M:Xbim.IO.CobieExpress.CobieModel.#ctor(System.String)">
+            <summary>
+            Creates EsentModel inside
+            </summary>
+            <param name="esentDbFile"></param>
+        </member>
+        <member name="M:Xbim.IO.CobieExpress.CobieModel.OpenStep21(System.IO.Stream,System.Int64,System.Int32)">
+            <summary>
+            This factory only opens an in memory model
+            </summary>
+            <param name="input"></param>
+            <param name="streamSize"></param>
+            <param name="labelFrom"></param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>
